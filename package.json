@@ -1,0 +1,27 @@
+{
+  "name": "pixi_lottery_game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false
+  },
+  "scripts": {
+    "start": "webpack-dev-server --mode development --open --hot",
+    "starti": "rmdir /s /q node_modules & del /f /q package-lock.json & nvm install lts & npm i & webpack-dev-server --mode development --open --hot"
+  },
+  "keywords": [],
+  "author": "Florin Nutiu",
+  "license": "ISC",
+  "dependencies": {
+    "gsap": "^3.12.2",
+    "pixi.js": "^7.3.1"
+  },
+  "devDependencies": {
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}
