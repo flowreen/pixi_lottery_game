@@ -20,7 +20,7 @@ npm
 git clone https://github.com/flowreen/pixi_lottery_game.git
 
 2. Navigate to the project directory:
-cd gametest
+cd pixi_lottery_game
 
 3. Install dependencies:
 npm install
