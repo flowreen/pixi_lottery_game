@@ -17,14 +17,14 @@ const ASSET_TYPE = '.png';      // Asset extension.
 const BALL_DRAW_ORIGIN_X = 900;	// Ball start animation position.
 const TUBE_START_X = 137;       // Tube start display position.
 const VISIBLE_BALLS = 5;        // Visible balls count.
-const BLUR_ARMOUNT = 0.2;       // Ball blur amount.
+const BLUR_ARMOUNT = 8;       // Ball blur amount.
 const BALL_WIDTH = 72;          // Ball width.
 const BALL_HEIGHT = 72;         // Ball height.
 const BALL_Y_OFFSET = 0.015;    // Ball y offset.
 const NUMBER_OFFSET_X = 0.2;    // Number x offset.
 const NUMBER_OFFSET_Y = 0.15;   // Number y offset.
 const SINGLE_DIGIT_NUMBER_WIDTH = 30;        // Number width.
-const DOUBLE_DIGIT_NUMBER_WIDTH = 52;        // Number width.
+const DOUBLE_DIGIT_NUMBER_WIDTH = 35;        // Number width.
 const NUMBER_HEIGHT = 45;       // Number height.
 
 // UI
@@ -284,7 +284,10 @@ class GameTest {
      */
     animateBalls() {
         // Animate result referencing displayedBalls
-        this.displayedBalls.forEach((ball, index) => {
+        this.displayedBalls.forEach((ballContainer, index) => {
+            const ball = ballContainer.getChildAt(0);
+            const number = ballContainer.getChildAt(1);
+
             const blurFilter = new PIXI.filters.BlurFilter();
             blurFilter.blurX = BLUR_ARMOUNT;
             blurFilter.blurY = 0;
@@ -295,19 +298,35 @@ class GameTest {
             shadowFilter.angle = 90;
 
             // Apply the filters to each ball
-            ball.filters = [blurFilter, shadowFilter];
+            ball.filters = [shadowFilter];
+            number.filters = [blurFilter];
+
             // Calculate the final x-position for the ball at the end of the tube
-            const finalX = TUBE_START_X + index * BALL_WIDTH * 1.1;
-            const timeout = 1800 + index * 500;
-            setTimeout(() => {
-                ball.filters[0].blurX = 0;
-            }, timeout);
+            const finalX = TUBE_START_X + index * BALL_WIDTH;
+
             // Animate the ball using gsap
-            gsap.to(ball, {
+            gsap.to(ballContainer, {
                 x: finalX, duration: 2,  // Duration of the animation in seconds
                 ease: "power2.inOut",  // Simulate acceleration/deceleration
-                delay: index * 0.5  // Stagger the animation for each ball
-                //rotation: Math.random() * 0.5 - 0.25  // Random rotation for a bit of variation
+                delay: index * 0.5,  // Stagger the animation for each ball
+                onUpdate: () => {
+                    // Apply counter-clockwise rotation to the number
+                    const progress = gsap.getProperty(ballContainer, "x") / finalX;
+                    number.rotation = progress * Math.PI * 2;  // Rotate 360 degrees
+
+                    // Recenter the number
+                    number.x = (BALL_WIDTH - number.width);
+                    number.y = (BALL_HEIGHT - NUMBER_HEIGHT);
+                },
+                onComplete: () => {
+                    // Reset rotation
+                    number.rotation = 0;
+                    const numberScale = number.scale;
+                    // Pause and highlight at the end
+                    gsap.to(number.scale, {x: numberScale.x + 0.1, y: numberScale.y + 0.1, duration: 0.2});
+                    gsap.to(number.scale, {x: numberScale.x, y: numberScale.y, duration: 0.2, delay: 0.2});
+                    number.filters[0].blurX = 0;
+                }
             });
         });
     }
@@ -339,15 +358,11 @@ class GameTest {
 
         // Overlay the number on the ball
         const numberSprite = new PIXI.Sprite(this.resources['n' + ballNumber]);
-        if (ballNumber > 9) {
-            numberSprite.width = DOUBLE_DIGIT_NUMBER_WIDTH;
-            numberSprite.x = (BALL_WIDTH - DOUBLE_DIGIT_NUMBER_WIDTH) / 2;  // Center the number on the ball
-        } else {
-            numberSprite.width = SINGLE_DIGIT_NUMBER_WIDTH;
-            numberSprite.x = (BALL_WIDTH - SINGLE_DIGIT_NUMBER_WIDTH) / 2;  // Center the number on the ball
-        }
+        numberSprite.anchor.set(0.5, 0.5);
+        numberSprite.width = ballNumber > 9 ? DOUBLE_DIGIT_NUMBER_WIDTH : SINGLE_DIGIT_NUMBER_WIDTH;
         numberSprite.height = NUMBER_HEIGHT;
-        numberSprite.y = (BALL_HEIGHT - NUMBER_HEIGHT) / 2;
+        numberSprite.x = (BALL_WIDTH - numberSprite.width) * 2;  // Center the number on the ball
+        numberSprite.y = (BALL_HEIGHT - NUMBER_HEIGHT) * 2;
 
         // Create a container for the ball and number
         const ballContainer = new PIXI.Container();
@@ -386,14 +401,9 @@ class GameTest {
         // Overlay the number on the ball
         const numberSprite = ballContainer.getChildAt(1);
         numberSprite.texture = this.resources['n' + ballNumber];
-        if (ballNumber > 9) {
-            numberSprite.width = DOUBLE_DIGIT_NUMBER_WIDTH;
-            numberSprite.x = (BALL_WIDTH - DOUBLE_DIGIT_NUMBER_WIDTH) / 2;  // Center the number on the ball
-        } else {
-            numberSprite.width = SINGLE_DIGIT_NUMBER_WIDTH;
-            numberSprite.x = (BALL_WIDTH - SINGLE_DIGIT_NUMBER_WIDTH) / 2;  // Center the number on the ball
-        }
+        numberSprite.width = ballNumber > 9 ? DOUBLE_DIGIT_NUMBER_WIDTH : SINGLE_DIGIT_NUMBER_WIDTH;
         numberSprite.height = NUMBER_HEIGHT;
+        numberSprite.x = (BALL_WIDTH - numberSprite.width) / 2;  // Center the number on the ball
         numberSprite.y = (BALL_HEIGHT - NUMBER_HEIGHT) / 2;
         return ballContainer;
     }
