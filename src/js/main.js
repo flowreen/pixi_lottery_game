@@ -46,6 +46,7 @@ const BALL_ASSETS_COMPLEX = {
     numbers: ['n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10', 'n11', 'n12', 'n13', 'n14', 'n15']
 };
 const BALL_SOUND_ASSET = "ballSound.mp4";
+const BACKGROUND_SOUND_ASSET = "hotShotDoubleShotSound.mp4";
 
 /**
  * GameTest sets up the basic PIXI Application for the new game developer coding task
@@ -78,6 +79,9 @@ class GameTest {
         // Load the assets
         const assetLoader = new AssetsLoader(ASSET_ROOT, ASSET_TYPE);
         assetLoader.loadAssets([ASSETS, BALL_ASSETS_SIMPLE, BALL_ASSETS_COMPLEX]).then(resources => {
+            new Howl({
+                src: [ASSET_ROOT + BACKGROUND_SOUND_ASSET],
+            }).play();
             this.resources = resources;
 
             // Create the containers for each layer
@@ -191,7 +195,6 @@ class GameTest {
             });
         });
     }
-
 
     /**
      * Resizes canvas size according to window size, From EVENT_RESIZE events
