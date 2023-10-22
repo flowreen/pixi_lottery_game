@@ -1,57 +1,59 @@
+// Importing required libraries and modules
 import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
 import {Howl} from 'howler';
 import AssetsLoader from './assets-loader.js';
 import {DropShadowFilter} from "@pixi/filter-drop-shadow";
 
-// Pixi stage handling.
+// Constants for screen dimensions and event types
 const SCREEN_WIDTH = 1024;
 const SCREEN_HEIGHT = 768;
 const EVENT_RESIZE = 'resize';
 
-// Assets
-const ASSET_ROOT = 'assets/';   // Asset root folder.
-const ASSET_TYPE = '.png';      // Asset extension.
+// Constants for asset management
+const ASSET_ROOT = 'assets/';   // Root directory for assets
+const ASSET_TYPE = '.png';      // File extension for image assets
 
-// Graphics
-const BALL_DRAW_ORIGIN_X = 900;	// Ball start animation position.
-const TUBE_START_X = 137;       // Tube start display position.
-const VISIBLE_BALLS = 5;        // Visible balls count.
-const BLUR_ARMOUNT = 8;       // Ball blur amount.
-const BALL_WIDTH = 72;          // Ball width.
-const BALL_HEIGHT = 72;         // Ball height.
-const BALL_Y_OFFSET = 0.015;    // Ball y offset.
-const NUMBER_OFFSET_X = 0.2;    // Number x offset.
-const NUMBER_OFFSET_Y = 0.15;   // Number y offset.
-const SINGLE_DIGIT_NUMBER_WIDTH = 30;        // Number width.
-const DOUBLE_DIGIT_NUMBER_WIDTH = 35;        // Number width.
-const NUMBER_HEIGHT = 45;       // Number height.
+// Constants for graphical elements and their positioning
+const TUBE_START_X = 137;       // x-coordinate for the start of the tube
+const VISIBLE_BALLS = 5;        // Number of balls visible at once
+const BLUR_ARMOUNT = 8;       // Amount of blur applied to the balls
+const BALL_WIDTH = 72;          // Width of the ball graphics
+const BALL_HEIGHT = 72;         // Height of the ball graphics
+const BALL_DRAW_ORIGIN_X = 900;	// Initial x-coordinate for ball animation
+const BALL_VERTICAL_CENTER = SCREEN_HEIGHT / 2 - BALL_HEIGHT / 2 + 322; // y-coordinate for ball animation
+const BALL_Y_OFFSET = 0.015;    // Vertical offset for ball positioning
+const NUMBER_OFFSET_X = 0.2;    // Horizontal offset for number positioning
+const NUMBER_OFFSET_Y = 0.15;   // Vertical offset for number positioning
+const SINGLE_DIGIT_NUMBER_WIDTH = 30;        // Width of single-digit numbers
+const DOUBLE_DIGIT_NUMBER_WIDTH = 35;        // Width of double-digit numbers
+const NUMBER_HEIGHT = 45;       // Height of the numbers
 
-// UI
+// Constants for user interaction
 const EVENT_POINTER_DOWN = 'pointerdown';
 
-// List of assets to load		
+// Asset lists for preloading
 const ASSETS = {
     tube: ['tube', 'peekshine', 'windowshine'],
     masks: ['peekmask', 'glassmask'],
     playBtn: ['playbutton_on', 'playbutton_dis', 'playbutton_off']
 };
-// Simple ball assets for quick test
+// Simplified ball assets for quick testing
 const BALL_ASSETS_SIMPLE = {
     balls: ['ball1', 'ball2', 'ball3', 'ball4', 'ball5', 'ball6', 'ball7', 'ball8', 'ball9', 'ball10', 'ball11', 'ball12', 'ball13', 'ball14', 'ball15']
 };
-// Complex ball assets to allow more complicated animation
+// Complex ball assets for detailed animations
 const BALL_ASSETS_COMPLEX = {
     balls: ['redb', 'blueb', 'yellowb'],
     numbers: ['n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9', 'n10', 'n11', 'n12', 'n13', 'n14', 'n15']
 };
+// Audio assets
 const BALL_SOUND_ASSET = "ballSound.mp4";
 const BACKGROUND_SOUND_ASSET = "hotShotDoubleShotSound.mp4";
 
 /**
- * GameTest sets up the basic PIXI Application for the new game developer coding task
- * @author    Logispin
- * @version    1.1
+ * GameTest sets up a PIXI Application for a ball drawing game.
+ * It handles asset loading, game initialization, and animations.
  */
 class GameTest {
     resources = null;
@@ -59,42 +61,43 @@ class GameTest {
     displayedBalls = [];
     ballsContainer = null;
     ballPool = [];
+    sounds = {};
 
     constructor() {
-        // Instantiate the test app
+        // Initialize the PIXI Application
         this.app = new PIXI.Application({width: SCREEN_WIDTH, height: SCREEN_HEIGHT});
         // Enable PixiJS Chrome extension for debugging
         globalThis.__PIXI_APP__ = this.app;
 
-        // Add canvas to document
+        // Add the canvas to the HTML document
         const canvas = this.app.view;
         document.body.appendChild(canvas);
 
-        // Register for resize event.
+        // Set up event listener for window resize
         window.addEventListener(EVENT_RESIZE, () => {
             this.windowResize(canvas);
         });
         this.windowResize(canvas);
 
-        // Load the assets
+        // Load game assets
         const assetLoader = new AssetsLoader(ASSET_ROOT, ASSET_TYPE);
         assetLoader.loadAssets([ASSETS, BALL_ASSETS_SIMPLE, BALL_ASSETS_COMPLEX]).then(resources => {
-            new Howl({
-                src: [ASSET_ROOT + BACKGROUND_SOUND_ASSET],
-            }).play();
             this.resources = resources;
 
-            // Create the containers for each layer
+            // Initialize sounds
+            this.loadSounds();
+
+            // Create and set up containers for different game layers
             const backgroundLayerContainer = new PIXI.Container();
             this.ballsContainer = new PIXI.Container();
             const masksContainer = new PIXI.Container();
-            // we want the window shine to be covering the balls
             const foregroundLayerContainer = new PIXI.Container();
 
             this.app.stage.addChild(backgroundLayerContainer);
             this.app.stage.addChild(this.ballsContainer);
             this.app.stage.addChild(foregroundLayerContainer);
 
+            // Set up and position game elements (tube, masks, shines, buttons, etc.)
             // Create tube sprite.
             this.tube = new PIXI.Sprite(resources.tube);
             this.tube.x = 0;
@@ -163,7 +166,7 @@ class GameTest {
             // Initially, only the normal state is visible
             playBtnNormal.visible = true;
 
-            // Setup event for the normal state
+            // Set up play button interaction
             playBtnNormal.on(EVENT_POINTER_DOWN, () => {
                 // Switch to pressed state
                 playBtnNormal.visible = false;
@@ -179,21 +182,29 @@ class GameTest {
                 playBtnDisabled.visible = true;
 
                 // Play sound when ball starts moving
-                new Howl({
-                    src: [ASSET_ROOT + BALL_SOUND_ASSET], onload: () => {
-                        // After the animation is complete, enable the button again
-                        // Assuming the total animation duration is 5 seconds
-                        setTimeout(() => {
-                            playBtnDisabled.visible = false;
-                            playBtnNormal.visible = true;
-                        }, 5000);
+                this.playSound('ballSound');
 
-                        // The sound has been loaded, you can start the animation here
-                        this.animateBalls(result);
-                    }
-                }).play();
+                // After the animation is complete, enable the button again
+                // Assuming the total animation duration is 5 seconds
+                setTimeout(() => {
+                    playBtnDisabled.visible = false;
+                    playBtnNormal.visible = true;
+                }, 5000);
+
+                //start the animation here
+                this.animateBalls(result);
             });
         });
+    }
+
+    /**
+     * Load game sounds
+     * @returns {Promise<void>}
+     */
+    async loadSounds() {
+        await this.loadSound('ballSound', ASSET_ROOT + BALL_SOUND_ASSET);
+        await this.loadSound('backgroundSound', ASSET_ROOT + BACKGROUND_SOUND_ASSET);
+        this.playSound('backgroundSound');
     }
 
     /**
@@ -201,15 +212,15 @@ class GameTest {
      * @param canvas {Canvas} the canvas instance to be resized
      */
     windowResize(canvas) {
-        const aspectRatio = canvas.width / canvas.height;
+        const ASPECT_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT;
         const containerWidth = window.innerWidth;
         const containerHeight = window.innerHeight;
-        let newHeight = containerWidth / aspectRatio;
+        let newHeight = containerWidth / ASPECT_RATIO;
         let newWidth = 0;
 
         if (newHeight > containerHeight) {
             newHeight = containerHeight;
-            newWidth = newHeight * aspectRatio;
+            newWidth = newHeight * ASPECT_RATIO;
         } else {
             newWidth = containerWidth;
         }
@@ -249,6 +260,12 @@ class GameTest {
         });
     }
 
+    /**
+     * Retrieves ball from the ballPool
+     * @param ballNumber
+     * @param index
+     * @returns {*}
+     */
     getBall(ballNumber, index) {
         let ball = this.ballPool.find(b => !b.inUse);
         if (!ball) {
@@ -259,7 +276,7 @@ class GameTest {
         }
         // Position the ball off-screen (to the right)
         ball.x = BALL_DRAW_ORIGIN_X;
-        ball.y = SCREEN_HEIGHT / 2 - BALL_HEIGHT / 2 + 322;  // Center vertically
+        ball.y = BALL_VERTICAL_CENTER;
         ball.inUse = true;
         return ball;
     }
@@ -280,7 +297,6 @@ class GameTest {
         }
         return numbers;
     }
-
 
     /**
      * Begins the animation sequence for drawing the balls one by one
@@ -409,6 +425,33 @@ class GameTest {
         numberSprite.x = (BALL_WIDTH - numberSprite.width) / 2;  // Center the number on the ball
         numberSprite.y = (BALL_HEIGHT - NUMBER_HEIGHT) / 2;
         return ballContainer;
+    }
+
+    /**
+     * Load a sound
+     * @param name
+     * @param src
+     * @returns {Promise<unknown>}
+     */
+    loadSound(name, src) {
+        return new Promise((resolve) => {
+            this.sounds[name] = new Howl({
+                src: [src],
+                onload: resolve
+            });
+        });
+    }
+
+    /**
+     * Play a sound
+     * @param name
+     */
+    playSound(name) {
+        if (this.sounds[name]) {
+            this.sounds[name].play();
+        } else {
+            console.warn(`Sound ${name} not found!`);
+        }
     }
 }
 
