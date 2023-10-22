@@ -16,8 +16,10 @@
   "author": "Florin Nutiu",
   "license": "ISC",
   "dependencies": {
+    "@pixi/filter-drop-shadow": "^5.2.0",
     "gsap": "^3.12.2",
-    "pixi.js": "^7.3.1"
+    "howler": "^2.2.4",
+    "pixi.js": "^7.3.2"
   },
   "devDependencies": {
     "webpack": "^5.89.0",
